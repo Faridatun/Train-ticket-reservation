@@ -1,0 +1,1874 @@
+#!/bin/bash
+zenity --info --width 400 --height 200 --text "Program Pemesanan Tiket Kereta Api (Kota Asal Surabaya)\nFaridatun Ni'mah\n1210161017\n2 D4 Telekomunikasi A\nPoliteknik Elektronika Negeri Surabaya"
+loading(){
+(
+   echo "25"; sleep 1
+   echo "#Loading . . . .";
+   echo "50"; sleep 1
+   echo "#Loading . . . .";
+   echo "75"; sleep 1
+   echo "#Loading . . . .";
+   echo "100"; sleep 1
+   echo "#Finish . . . ."; sleep 1
+) | zenity --progress --cancel-label "exit" --width 400 --height 100 \
+--title="GO-TRAIN : Pemesanan Tiket Kereta Api" \
+--text="Loading...." \
+--percentage=10 --timeout=2
+if [ $? -eq 1 ]; then
+exit
+fi
+}
+loading;
+set_id(){
+ida=`awk 'BEGIN{i=1s}
+{
+printf"ids="i";";
+i++;
+}'<"dataku21.txt"`;
+eval "$ida";
+}
+daftar(){
+data=`awk 'BEGIN{FS=":";i=0}
+{
+print "d["i"]="$1"; d["i+1"]="$2"; d["i+2"]="$3";d["i+3"]="$4"; d["i+4"]="$5"; d["i+5"]="$6"; d["i+6"]="$7";d["i+7"]="$8"; d["i+8"]="$9"; d["i+9"]="$10"; d["i+10"]="$11";"; 
+i+=11;
+}' < "dataku21.txt"`;
+eval "$data"; #LOOP
+zenity --list --width 700 --height 500 --title "Daftar Pemesan Tiket Kereta Api" \
+--column "No" --column "Nama" --column "No.Id" --column "No. Telepon" --column  "Email" --column "Tujuan" --column "Stasiun" --column "Tanggal" --column "Biaya Tiket" --column "Biaya kargo" --column "Total Biaya"  "${d[@]}";  
+menu;
+}
+hapus(){
+zenity --question --text "Anda yakin ingin menghapus data yang paling akhir?";
+if [ $? -eq 0 ];
+then
+banding=`cat dataku21.txt | wc -l`;
+echo "$(sed -i "$banding d" dataku21.txt)";
+benar=$(zenity --info --title "Berhasil" --text "Data sudah dihapus");
+echo "$(bash task8.sh)";
+exit
+fi
+menu;
+}
+pesan(){
+destination;
+identitas;
+menu;
+}
+function identitas() {
+tgl=$(zenity --calendar --title "GO-TRAIN" --text="Pilih tanggal keberangkatan anda.");
+if [ $? -eq 1 ];
+then 
+echo "Tidak ada tanggal yang dipilih"
+menu;
+fi
+nm=$(zenity --width 400 --height 100 --title="GO TRAIN" --entry --text="Nama lengkap anda : ");
+if [ $? -eq 1 ]; then
+zenity --width 400 --height 200 --error --text "Belum Terisi. Lengkapi terlebih dahulu untuk melanjutkan proses pemesanan tiket kereta api."
+identitas;
+fi
+id=$(zenity --width 400 --height 100 --title="GO TRAIN" --entry --text="No. Identitas anda (KTP/SIM): ");
+if [ $? -eq 1 ]; then
+zenity --width 400 --height 200 --error --text "Belum Terisi. Lengkapi terlebih dahulu untuk melanjutkan proses pemesanan tiket kereta api."
+identitas;
+fi
+telpon=$(zenity --width 400 --height 100 --title="GO TRAIN" --entry --text="No.Telp anda : "); 
+if [ $? -eq 1 ]; then
+zenity --width 400 --height 200 --error --text "Belum Terisi. Lengkapi terlebih dahulu untuk melanjutkan proses pemesanan tiket kereta api."
+identitas;
+fi
+email=$(zenity --width 400 --height 100 --title="GO TRAIN" --entry --text="Email anda : ");
+if [ $? -eq 1 ]; then
+zenity --width 400 --height 200 --error --text "Belum Terisi. Lengkapi terlebih dahulu untuk melanjutkan proses pemesanan tiket kereta api."
+identitas;
+fi
+bab=$(zenity --title="GO-TRAIN" --info --text="Untuk melengkapi proses pembelian tiket lakukan pembayaran. Pembayaran dapat dilakukan melaui ATM/Internet Banking Bank Mandiri atau Outlet Payment Point Fastpay dengan memasukkan KODE PEMBAYARAN anda. ")
+penutup=$(zenity --width 400 --height 100 --title="GO TRAIN" --info --text="Semoga perjalanan anda menyenangkan.")
+set_id;
+echo "$(($ids+1)):$nm:$id:$telpon:$email:$tujuan:$stasiun:$tgl:$jum:$jum2:$total" >> "dataku21.txt";
+daftar;
+}
+function argo_bromo() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*365000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Eksekutif(J)
+Nama Kereta\t\t\t\t=  Argo Bromo
+Jam Berangkat\t\t\t=  08.00
+Jam Tiba\t\t\t\t\t=  11.20
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 98564997"
+}
+function sembrani() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang (>3th) = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*390000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Eksekutif(I)
+Nama Kereta\t\t\t\t=  Sembrani
+Jam Berangkat\t\t\t=  09.00
+Jam Tiba\t\t\t\t\t=  12.52
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 87357361"
+}
+function harina3() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*400000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Eksekutif(A)
+Nama Kereta\t\t\t\t=  Harina
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  20.38
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 40856381"
+}
+function gumarang() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*370000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Bussiness(B)
+Nama Kereta\t\t\t\t=  Gumarang
+Jam Berangkat\t\t\t=  15.30
+Jam Tiba\t\t\t\t\t=  19.38
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum 
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t\t\= 16548088"
+}
+function harina5() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*320000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Bussiness(B)
+Nama Kereta\t\t\t\t=  Harina
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  20.38
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t\t\= 75937112"
+}
+function harina6() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*280000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Bussiness(N)
+Nama Kereta\t\t\t\t=  Harina
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  20.38
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t\t\= 10826241"
+}
+function maharani() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*49000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Maharani
+Jam Berangkat\t\t\t=  06.00
+Jam Tiba\t\t\t\t\t=  10.28
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum 
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t\t\= 91726441"
+}
+function kertajaya() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*100000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Kertajaya
+Jam Berangkat\t\t\t=  23.35
+Jam Tiba\t\t\t\t\t=  03.57
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 33715245"
+}
+function ambarawa() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*90000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Ambarawa
+Jam Berangkat\t\t\t=  12.10
+Jam Tiba\t\t\t\t\t=  17.16
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum 
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t\t\= 27354112"
+}
+function bangunkarta1() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*330000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Eksekutif(J)
+Nama Kereta\t\t\t\t=  Bangunkarta
+Jam Berangkat\t\t\t=  16.00
+Jam Tiba\t\t\t\t\t=  22.28
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 37482661"
+}
+function bangunkarta2() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*450000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Eksekutif(A)
+Nama Kereta\t\t\t\t=  Bangunkarta
+Jam Berangkat\t\t\t=  16.00
+Jam Tiba\t\t\t\t\t=  22.28
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10253721"
+}
+function bangunkarta3() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*405000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Eksekutif(H)
+Nama Kereta\t\t\t\t=  Bangunkarta
+Jam Berangkat\t\t\t=  16.00
+Jam Tiba\t\t\t\t\t=  22.28
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 12836122"
+}
+function ranggajati() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*308000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Bussiness(B)
+Nama Kereta\t\t\t\t=  Ranggajati
+Jam Berangkat\t\t\t=  05.35
+Jam Tiba\t\t\t\t\t=  13.05
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t\t\= 13864383"
+}
+function brantas() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*264000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Brantas
+Jam Berangkat\t\t\t=  05.35
+Jam Tiba\t\t\t\t\t=  13.05
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 12834628"
+}
+function sancaka() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*214000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Sancaka
+Jam Berangkat\t\t\t=  07.30
+Jam Tiba\t\t\t\t\t=  15.00
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 62435812"
+}
+function pasundan() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*178000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Tawang
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Pasundan
+Jam Berangkat\t\t\t=  08.10
+Jam Tiba\t\t\t\t\t=  15.40
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 13983731"
+}
+function jayabaya3() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*310000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  14.15
+Jam Tiba\t\t\t\t\t=  18.35
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t\t\= 91212334"
+}
+function maharani3() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*49000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Maharani
+Jam Berangkat\t\t\t=  06.00
+Jam Tiba\t\t\t\t\t=  10.41
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 97432658"
+identitas;
+}
+function ambarawa3() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*90000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Ambarawa
+Jam Berangkat\t\t\t=  13.10
+Jam Tiba\t\t\t\t\t=  17.33
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 98671235"
+}
+function jayabaya43() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*280000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(Q)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  14.15
+Jam Tiba\t\t\t\t\t=  18.35
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 52432367"
+}
+function jayabaya53() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*295000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(P)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  14.15
+Jam Tiba\t\t\t\t\t=  18.35
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 17265342"
+}
+function jayabaya4() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*310000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  13.49
+Jam Tiba\t\t\t\t\t=  18.35
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 48362109"
+}
+function jayabaya24() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*280000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(Q)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  13.49
+Jam Tiba\t\t\t\t\t=  18.35
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 43527188"
+}
+function jayabaya34() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*295000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Semarang Poncol
+Jenis Kereta\t\t\t\t=  Economy(P)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  13.49
+Jam Tiba\t\t\t\t\t=  18.35
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18625363"
+}
+#Surabaya=>Yogyakarta,dari Stasiun__Gubeng
+function argoy() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*454000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Lempuyangan
+Jenis Kereta\t\t\t\t=  Executive(A)
+Nama Kereta\t\t\t\t=  Argo Wilis
+Jam Berangkat\t\t\t=  07.00
+Jam Tiba\t\t\t\t\t=  12.05
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 51312127"
+}
+function ranggajati2y() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*444000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Lempuyangan
+Jenis Kereta\t\t\t\t=  Executive(A)
+Nama Kereta\t\t\t\t=  Ranggajati
+Jam Berangkat\t\t\t=  09.15
+Jam Tiba\t\t\t\t\t=  15.13
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 12196348"
+}
+function ranggajati3y() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*340000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Lempuyangan
+Jenis Kereta\t\t\t\t=  Bussiness(B)
+Nama Kereta\t\t\t\t=  Ranggajati
+Jam Berangkat\t\t\t=  09.15
+Jam Tiba\t\t\t\t\t=  15.20
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 48366109"
+}
+function pasundany() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*180000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Lempuyangan
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Pasundan
+Jam Berangkat\t\t\t=  05.35
+Jam Tiba\t\t\t\t\t=  12.10
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 41527188"
+}
+function kahuripany() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*190000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Lempuyangan
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Kahuripan
+Jam Berangkat\t\t\t=  18.25
+Jam Tiba\t\t\t\t\t=  23.50
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18605163"
+}
+#Surabaya__Gubeng_
+function argo3g() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*370000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Executive(A)
+Nama Kereta\t\t\t\t=  Argo Wilis
+Jam Berangkat\t\t\t=  07.00
+Jam Tiba\t\t\t\t\t=  11.18
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18605107"
+}
+function turangga3g() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*370000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Executive(A)
+Nama Kereta\t\t\t\t=  Turangga
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  21.19
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 25605163"
+}
+function ranggajati3g() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*240000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Bussiness(O)
+Nama Kereta\t\t\t\t=  Ranggajati
+Jam Berangkat\t\t\t=  09.15
+Jam Tiba\t\t\t\t\t=  14.31
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18325163"
+}
+function sancaka3g() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*170000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Sancaka
+Jam Berangkat\t\t\t=  17.25
+Jam Tiba\t\t\t\t\t=  22.32
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18600063"
+}
+function mutiara3g() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*205000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Mutiara
+Jam Berangkat\t\t\t=  18.25
+Jam Tiba\t\t\t\t\t=  23.56
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18605100"
+}
+function pasundanwk() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*94000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Wonokromo Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Pasundan
+Jam Berangkat\t\t\t=  08.19
+Jam Tiba\t\t\t\t\t=  13.55
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18611100"
+}
+function logawawk() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*74000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Wonokromo Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Logawa
+Jam Berangkat\t\t\t=  10.54
+Jam Tiba\t\t\t\t\t=  16.17
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 18604400"
+}
+function tanjungwk() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*104000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Wonokromo Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Yogyakarta
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Sri Tanjung
+Jam Berangkat\t\t\t=  13.40
+Jam Tiba\t\t\t\t\t=  19.25
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10605100"
+}
+function argobn() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*460000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Executive(J)
+Nama Kereta\t\t\t\t=  Argo Wilis
+Jam Berangkat\t\t\t=  07.00
+Jam Tiba\t\t\t\t\t=  19.06
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 19805100"
+}
+function turanggabn() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*540000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Executive(H)
+Nama Kereta\t\t\t\t=  Turangga
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  05.04
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10609800"
+}
+function mutiara3bn() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*325000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Bussiness(N)
+Nama Kereta\t\t\t\t=  Mutiara
+Jam Berangkat\t\t\t=  19.00
+Jam Tiba\t\t\t\t\t=  08.33
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10605115"
+}
+function mutiara4bn() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*380000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Bussiness(B)
+Nama Kereta\t\t\t\t=  Mutiara
+Jam Berangkat\t\t\t=  19.00
+Jam Tiba\t\t\t\t\t=  08.33
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 19805115"
+}
+function sancakabn() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*300000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Sancaka
+Jam Berangkat\t\t\t=  07.30
+Jam Tiba\t\t\t\t\t=  21.00
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10666115"
+}
+function harinapt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*420000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Executive(J)
+Nama Kereta\t\t\t\t=  Harina
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  04.11
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10447515"
+}
+function harinapt2() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*400000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*6000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Bussiness(B)
+Nama Kereta\t\t\t\t=  Harina
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  04.11
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10620000"
+}
+function harinapt3() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*260000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Stasiun Bandung
+Jenis Kereta\t\t\t\t=  Economy(P)
+Nama Kereta\t\t\t\t=  Harina
+Jam Berangkat\t\t\t=  16.30
+Jam Tiba\t\t\t\t\t=  04.11
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10627515"
+identitas;
+}
+function gaya_jkt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*104000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Pasar Senen Jakarta
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Gaya Baru Malam Selatan
+Jam Berangkat\t\t\t=  12.00
+Jam Tiba\t\t\t\t\t=  01.55
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10620980"
+}
+function jayabaya_jkt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*345000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Gubeng Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Pasar Senen Jakarta
+Jenis Kereta\t\t\t\t=  Economy(Q)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  13.49
+Jam Tiba\t\t\t\t\t=  01.34
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10622340"
+}
+function argo1_jktt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*485000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Gambir Jakarta
+Jenis Kereta\t\t\t\t=  Executive(J)
+Nama Kereta\t\t\t\t=  Argo Bromo
+Jam Berangkat\t\t\t=  08.00
+Jam Tiba\t\t\t\t\t=  17.00
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10771100"
+}
+function argo2_jktt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*555000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Gambir Jakarta
+Jenis Kereta\t\t\t\t=  Executive(H)
+Nama Kereta\t\t\t\t=  Argo Bromo
+Jam Berangkat\t\t\t=  08.00
+Jam Tiba\t\t\t\t\t=  17.00
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10620212"
+}
+function argo2_jktt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*555000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Gambir Jakarta
+Jenis Kereta\t\t\t\t=  Executive(H)
+Nama Kereta\t\t\t\t=  Argo Bromo
+Jam Berangkat\t\t\t=  08.00
+Jam Tiba\t\t\t\t\t=  17.00
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10620212"
+}
+function sembrani3_jktt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*520000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*10000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Gambir Jakarta
+Jenis Kereta\t\t\t\t=  Executive(I)
+Nama Kereta\t\t\t\t=  Sembrani
+Jam Berangkat\t\t\t=  09.00
+Jam Tiba\t\t\t\t\t=  19.17
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 10664212"
+}
+function jayabaya4_jktt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*345000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Gambir Jakarta
+Jenis Kereta\t\t\t\t=  Economy(H)
+Nama Kereta\t\t\t\t=  Jayabaya
+Jam Berangkat\t\t\t=  14.15
+Jam Tiba\t\t\t\t\t=  01.34
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 19520212"
+}
+function jayabaya5_jktt() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*360000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Pasar Turi Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Gambir Jakarta
+Jenis Kereta\t\t\t\t=  Economy(P)
+Nama Kereta\t\t\t\t=  Gumarang
+Jam Berangkat\t\t\t=  15.30
+Jam Tiba\t\t\t\t\t=  02.31
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 17220212"
+}
+function baru_wnkr() {
+argo=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah penumpang = ")
+#operasi hitung
+if [ $argo -gt 0 ]
+then
+let jum=$argo*104000;
+fi
+argo2=$(zenity --title "GO TRAIN" --entry --text="Masukkan jumlah kargo tambahan yang (maks. 40 kg) = (dalam kg)")
+#operasi hitung
+if [ $argo2 -gt 0 ]
+then
+let jum2=$argo2*2000;
+fi
+let total=jum+jum2;
+
+zenity --info --title "GO TRAIN" --text "Anda akan membeli tiket kereta api dengan format sebagai berikut :
+Kota Asal\t\t\t\t\t=  Surabaya
+Stasiun Asal\t\t\t\t=  Wonokromo Surabaya
+Kota Tujuan\t\t\t\t=  $tujuan
+Stasiun Tujuan\t\t\t=  Jatinegara Jakarta
+Jenis Kereta\t\t\t\t=  Economy(C)
+Nama Kereta\t\t\t\t=  Gaya Baru Malam Selatan
+Jam Berangkat\t\t\t=  12.09
+Jam Tiba\t\t\t\t\t=  01.42
+Jumlah Penumpang\t\t=  $argo
+Biaya penumpang\t\t=  $jum
+Biaya kargo tambahan\t=  $jum2
+Total biaya yang harus dibayar = $total
+KODE PEMBAYARAN\t\t= 17225212"
+}
+#======================================================
+function Surabaya_Pasar_Turi() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Eksekutif_J Argo_Bromo 08.00 11.20 Rp.365.000,00 false Eksekutif_I Sembrani 09.00 12.52 Rp.390.000,00 false Eksekutif_A Harina 16.30 20.38 Rp.400.000,00 false Bussiness_B Gumarang 15.30 19.38 Rp.370.000,00 false Bussiness_B_ Harina 16.30 20.38 Rp.320.000,00 false Bussiness_N Harina 16.30 20.38 Rp.280.000,00 false Economy_C Maharani 06.00 10.28 Rp.49.000,00 false Economy_C_ Kertajaya 23.35 03.57 Rp.100.000,00 false Economy__C Ambarawa 13.10 17.16 Rp.90.000,00)
+case $supatu in
+"Eksekutif_J") argo_bromo;;
+"Eksekutif_I") sembrani;;
+"Eksekutif_A") harina3;;
+"Bussiness_B") gumarang;;
+"Bussiness_B_") harina5;;
+"Bussiness_N") harina6;;
+"Economy_C") maharani;;
+"Economy_C_") kertajaya;;
+"Economy__C") ambarawa;;
+esac
+}
+function Surabaya_Gubeng() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Eksekutif_J Bangunkarta 16.00 22.28 Rp.330.000,00 false Eksekutif_A Bangunkarta 16.00 12.28 Rp.450.000,00 false  Eksekutif_H Bangunkarta 16.00 22:28 Rp.405.000,00 false Bussiness_B Ranggajati 09.15 16.30 Rp.308.000,00 false Economy_C Brantas 05.35 13.05 Rp.264.000,00 false Economy_C_ Sancaka 07.30 15.00 Rp.214.000,00 false Economy__C Pasundan 08.10 15.40 Rp.178.000,00)
+case $supatu in
+"Eksekutif_J") bangunkarta1;;
+"Eksekutif_A") bangunkarta2;;
+"Eksekutif_H") bangunkarta3;;
+"Bussiness_B") ranggajati;;
+"Economy_C") brantas;;
+"Economy_C_") sancaka;;
+"Economy__C") pasundan;;
+esac
+}
+function Surabaya_Pasar_Turi_() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Economy_C Jayabaya 14.15 18.35 Rp.310.000,00 false Economy_C_ Maharani 06.00 10.41 Rp.49.000,00 false _Economy_C_ Ambarawa 13.10 17.33 Rp.90.000,00 false Economy_Q Jayabaya 14.15 18.35 Rp.280.000,00 false Economy_P Jayabaya 14.15 18.35 Rp.295.000,00)
+case $supatu in
+"Economy_C") jayabaya3;;
+"Economy_C_") maharani3;;
+"_Economy_C_") ambarawa3;;
+"Economy_Q") jayabaya43;;
+"Economy_P") jayabaya53;;
+esac
+}
+function Surabaya_Gubeng_() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Economy_C Jayabaya 13.49 18.35 Rp.310.000,00 false Economy_Q Jayabaya 13.49 18.35 Rp.280.000,00 false Economy_P Ambarawa 13.49 18.35 Rp.295.000,00) 
+case $supatu in
+"Economy_C") jayabaya4;;
+"Economy_Q") jayabaya24;;
+"Economy_P") jayabaya34;;
+esac
+}
+function Surabaya__Gubeng() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Executive_A Argo_Wilis 07.00 12.05 Rp.454.000,00 false Executive_A_ Ranggajati 09.15 15.13 Rp.444.000,00 false Bussiness_B Ranggajati 09.15 15.20 Rp.340.000,00 false  Economy_C Pasundan 05.35 12.10 Rp.180.000,00 false Economy_C_ Kahuripan 18.25 23.50 Rp.190.000,00)
+case $supatu in
+"Executive_A") argoy;;
+"Executive_A_") ranggajati2y;;
+"Bussiness_B") ranggajati3y;;
+"Economy_C") pasundany;;
+"Economy_C_") kahuripany;;
+esac
+}
+function Surabaya__Gubeng_() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Executive_A Argo_Wilis 07.00 11.18 Rp.370.000,00 false Executive_A_ Turangga 16.30 21.19 Rp.370.000,00 false Bussiness_O Ranggajati 09.15 14.31 Rp.240.000,00 false Economy_C Sancaka 17.25 22.32 Rp.170.000,00 false Economy_C_ Mutiara 18.25 23.56 Rp.205.000,00)
+case $supatu in
+"Executive_A") argo3g;;
+"Executive_A_") turangga3g;;
+"Bussiness_O") ranggajati3g;;
+"Economy_C") sancaka3g;;
+"Economy_C_") mutiara3g;;
+esac
+}
+function Stasiun_Wonokromo() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Economy_C Pasundan 08.19 13.55 Rp.94.000,00 false Economy_C_ Logawa 10.54 16.17 Rp.74.000,00 false _Economy_C Sri_Tanjung 13.40 19.25 Rp.104.000,00)
+case $supatu in
+"Economy_C") pasundanwk;;
+"Economy_C_") logawawk;;
+"_Economy_C_") tanjungwk;;
+esac
+}
+function _Surabaya_Gubeng() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Executive_J Argo_Wilis 07.00 19.06 Rp.460.000,00 false Executive_H Turangga 16.30 05.04 Rp.540.000,00 false Bussiness_N Mutiara 19.00 08.33 Rp.325.000,00 false Bussiness_B Mutiara 19.00 08.33 Rp.380.000,00 false Economy_C Sancaka 07.30 21.00 Rp.300.000,00)
+case $supatu in
+"Executive_J") argobn;;
+"Executive_H") turanggabn;;
+"Bussiness_N") mutiara3bn;;
+"Bussiness_B") mutiara4bn;;
+"Economy_C") sancakabn;;
+esac
+}
+function _Surabaya_Pasar_Turi() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Executive_J Harina 16.30 04.11 Rp.420.000,00 false Bussiness_B Harina 16.30 04.11 Rp.400.000,00 false Economy_P Harina 16.30 04.11 Rp.260.000,00)
+case $supatu in
+"Executive_J") harinapt;;
+"Bussiness_B") harinapt2;;
+"Economy_P") harinapt3;;
+esac
+}
+function _Surabaya_Gubeng_() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Economy_C Gaya_Baru 12.00 01.55 Rp.104.000,00 false Economy_Q Jayabaya 13.49 01.34 Rp.345.000,00 false Economy_P Jayabaya 13.49 01.34 Rp.365.000,00)
+case $supatu in
+"Economy_C") gaya_jkt;;
+"Economy_Q") jayabaya_jkt;;
+"Economy_P") jayabaya3_jkt;;
+esac
+}
+function _Surabaya_Pasar_Turi_() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Executive_J Argo_Bromo 08.00 17.00 Rp.485.000,00 false Executive_H Argo_Bromo 08.00 17.00 Rp.555.000,00 false Executive_I Sembrani 09.00 19.17 Rp.520.000,00 false Economy_E Jayabaya 14.15 01.34 Rp.345.000,00 false Economy_C Gumarang 15.30 02.31 Rp.360.000,00)
+case $supatu in
+"Executive_J") argo1_jktt;;
+"Executive_H") argo2_jktt;;
+"Executive_I") sembrani3_jktt;;
+"Economy_E") jayabaya4_jktt;;
+"Economy_C") jayabaya5_jktt;;
+esac
+}
+function Stasiun_Wonokromo_() {
+supatu=$(zenity --width 700 --height 500 --list --title "GO TRAIN" --text "Pilih data berikut" --checklist --column=" " --column="Jenis Kereta" --column="Nama Kereta" --column="Jam Berangkat" --column="Jam Tiba" --column="Harga per orang" false Economy_C Gaya_Baru 12.09 01.42 Rp.104.000,00)
+case $supatu in
+"Economy_C") baru_wnkr;
+esac
+}
+#=============================================================
+function Semarang() {
+stasiun=$(zenity --title="GO TRAIN" --width 500 --height 300 --list --text="Pilih stasiun keberangkatan dan tujuan anda" --radiolist --column="Check" --column="Stasiun Asal" --column="Stasiun Tujuan" false Surabaya_Pasar_Turi Semarang_Tawang false Surabaya_Gubeng Semarang_Tawang_ false Surabaya_Pasar_Turi_ Semarang_Ponco false Surabaya_Gubeng_ Semarang_Ponco_ ); echo $smrang
+case $stasiun in
+"Surabaya_Pasar_Turi") Surabaya_Pasar_Turi ;;
+"Surabaya_Gubeng") Surabaya_Gubeng ;;
+"Surabaya_Pasar_Turi_") Surabaya_Pasar_Turi_ ;;
+"Surabaya_Gubeng_") Surabaya_Gubeng_ ;;
+esac
+}
+function Yogyakarta() {
+stasiun=$(zenity --title="GO TRAIN" --width 500 --height 300 --list --text="Pilih stasiun keberangkatan dan tujuan anda" --radiolist --column="Check" --column="Stasiun Asal" --column="Stasiun Tujuan" false Surabaya__Gubeng Yogyakarta_Lempuyangan false Surabaya__Gubeng_ Stasiun_Yogyakarta false Stasiun_Wonokromo Yogyakarta_Lempuyangan ); echo $ygy
+case $stasiun in
+"Surabaya__Gubeng") Surabaya__Gubeng ;;
+"Surabaya__Gubeng_") Surabaya__Gubeng_ ;;
+"Stasiun_Wonokromo") Stasiun_Wonokromo ;;
+esac
+}
+function Bandung() {
+stasiun=$(zenity --title="GO TRAIN" --width 500 --height 300 --list --text="Pilih stasiun keberangkatan dan tujuan anda" --radiolist --column="Check" --column="Stasiun Asal" --column="Stasiun Tujuan" false _Surabaya_Gubeng _Stasiun_Bandung false _Surabaya_Pasar_Turi _Stasiun_Bandung);
+case $stasiun in
+"_Surabaya_Gubeng") _Surabaya_Gubeng ;;
+"_Surabaya_Pasar_Turi") _Surabaya_Pasar_Turi ;;
+esac
+}
+function Jakarta() {
+stasiun=$(zenity --title="GO TRAIN" --width 500 --height 300 --list --text="Pilih stasiun keberangkatan dan tujuan anda" --radiolist --column="Check" --column="Stasiun Asal" --column="Stasiun Tujuan" false _Surabaya_Gubeng_ Pasar_Senen false _Surabaya_Pasar_Turi_ Stasiun_Gambir false Stasiun_Wonokromo_ Stasiun_Jatinegara);
+case $stasiun in
+"_Surabaya_Gubeng_") _Surabaya_Gubeng_ ;;
+"_Surabaya_Pasar_Turi_") _Surabaya_Pasar_Turi_ ;;
+"Stasiun_Wonokromo_") Stasiun_Wonokromo_ ;;
+esac
+}
+function destination() {
+tujuan=$(zenity --title="GO TRAIN" --width 400 --height 300 --list --text="Pilih kota tujuan anda" --radiolist --column="Check" --column="Kota Tujuan" false Semarang false Yogyakarta false Bandung false Jakarta); 
+case $tujuan in
+"Semarang") Semarang ;;
+"Yogyakarta") Yogyakarta ;;
+"Bandung") Bandung ;;
+"Jakarta") Jakarta ;;
+esac
+}
+cetak(){
+echo "====DATA PEMESAN TIKET KERETA API===="
+echo "========Asal Kota Surabaya==========="
+echo "Nama			= $nm"
+echo "No. ID (KTP/SIM)	= $id"
+echo "No. Telp		= $telpon"
+echo "E-mail			= $email"
+echo "Tujuan			= $tujuan"
+echo "Stasiun Keberangkatan	= $stasiun"
+echo "Tanggal Keberangkatan	= $tgl"
+echo "Menu Kereta Pilihan	= $supatu"
+echo "Jumlah Penumpang	= $argo"
+echo "Kargo Tambahan		= $argo2"
+echo "Biaya Penumpang		= $jum"
+echo "Biaya Kargo		= $jum2"
+echo "Total Biaya		= $total"
+echo "====================================="
+menu;
+}
+
+menu(){
+men=`zenity --width 500 --height 400 --title "GO-TRAIN : Pemesanan Tiket Kereta APi" --list --text "Menu Pilihan" --radiolist --column="" --column "Menu" false "Pemesanan Tiket" false "Pencetakan Tiket" false "Data Pemesan Tiket" false "Hapus Data Pemesan"`
+case $men in
+"Pemesanan Tiket") pesan;;
+"Pencetakan Tiket") cetak;;
+"Data Pemesan Tiket") daftar;;
+"Hapus Data Pemesan") hapus;;
+esac
+}
+menu;
+if [ "$?" == 0 ]
+then
+ask=`zenity --question --text "Apakah anda yakin ingin keluar?" --title "Keluar" --ok-label="Ya" --cancel-label="Tidak"`
+if [ "$?" == 0 ]
+then
+zenity --info --title "Sampai jumpa lagi" --text "Terima kasih telah menggunakan aplikasi ini"
+exit 0;
+else menu;
+fi
+fi
